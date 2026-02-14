@@ -8,6 +8,25 @@ from ..schemas import UserRead, UserUpdate
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+# ✅ ДОБАВЬ ЭТО
+@router.get("/me", response_model=UserRead)
+def read_me(
+    db=Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user = db.exec(select(User).where(User.id == current_user.id)).first()
+
+    return UserRead(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        sport_interest=user.sport_interest,
+        skill_level=user.skill_level,
+        location=user.location,
+    )
+
+
+# ТВОЙ UPDATE (оставляем)
 @router.patch("/me", response_model=UserRead)
 def update_me(
     update_in: UserUpdate,

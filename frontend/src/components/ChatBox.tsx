@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { getChat, sendChat } from "../api/matches";
+import { ChatMessage } from "../types";
 
 type Props = {
   matchId: string | number;
 };
 
 const ChatBox = ({ matchId }: Props) => {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
 
   const load = () => {
-    getChat(matchId).then(setMessages).catch(() => {
-      // TODO: add error UI
-    });
+    getChat(matchId).then(setMessages);
   };
 
   useEffect(() => {
@@ -44,7 +43,7 @@ const ChatBox = ({ matchId }: Props) => {
       </div>
       <form onSubmit={handleSend} className="flex space-x-2">
         <input
-          className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-emerald-500"
+          className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."

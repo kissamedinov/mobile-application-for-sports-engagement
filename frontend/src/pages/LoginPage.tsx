@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../api/auth";
+import { login as loginRequest } from "../api/auth";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,17 +18,27 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await login(email, password);
+      const res = await loginRequest(email, password);
 
-      // 🔐 сохраняем токен
-      localStorage.setItem("token", res.access_token);
+      if (!res?.access_token) {
+        throw new Error("No access token returned");
+      }
 
-      // ➜ на дашборд
-      navigate("/");
+      console.log("Token received:", res.access_token);
+
+      // 🔥 ВАЖНО — ждём пока user загрузится
+      await login(res.access_token);
+
+      console.log("User set in context");
+
+      navigate("/dashboard", { replace: true });
+
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(
         err?.response?.data?.detail ||
-          "Login failed. Check email or password."
+        err?.message ||
+        "Login failed."
       );
     } finally {
       setLoading(false);
@@ -34,74 +46,61 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <h2>Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-black text-white">
+      <div className="card w-full max-w-sm">
+        <h1 className="page-title">Login</h1>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && (
+          <div className="text-xs text-red-400 mb-3">
+            {error}
+          </div>
+        )}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={styles.input}
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={styles.input}
-        />
+          <div>
+            <label className="label">Email</label>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-        <button type="submit" disabled={loading} style={styles.button}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+          <div>
+            <label className="label">Password</label>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-        <p style={{ marginTop: 16 }}>
-          No account? <Link to="/register">Register</Link>
-        </p>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="button-primary w-full"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+
+        </form>
+
+        <div className="text-xs text-zinc-400 mt-4">
+          No account?{" "}
+          <Link
+            to="/register"
+            className="text-emerald-400 hover:text-emerald-300 transition"
+          >
+            Register
+          </Link>
+        </div>
+
+      </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#f5f5f5",
-  },
-  form: {
-    background: "#fff",
-    padding: 32,
-    borderRadius: 8,
-    width: 320,
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-  },
-  input: {
-    padding: 10,
-    fontSize: 14,
-  },
-  button: {
-    padding: 10,
-    fontSize: 16,
-    cursor: "pointer",
-  },
-  error: {
-    background: "#ffe0e0",
-    color: "#900",
-    padding: 8,
-    borderRadius: 4,
-    fontSize: 14,
-  },
-};

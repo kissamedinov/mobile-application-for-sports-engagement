@@ -1,15 +1,14 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 
-const Layout = () => {
+export default function Layout() {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-6">
+
+      <div className="container mx-auto px-6 py-8">
         <Outlet />
-      </main>
+      </div>
     </div>
   );
-};
-
-export default Layout;
+}

@@ -1,9 +1,17 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createMatch, listMatches } from "../api/matches";
 import MatchCard from "../components/MatchCard";
+import Loader from "../components/Loader";
+import EmptyState from "../components/EmptyState";
+import { Match } from "../types";
+import { useToast } from "../context/ToastContext";
 
 const MatchesPage = () => {
-  const [matches, setMatches] = useState<any[]>([]);
+  const { showToast } = useToast();
+
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [sportFilter, setSportFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
 
@@ -13,10 +21,14 @@ const MatchesPage = () => {
   const [maxPlayers, setMaxPlayers] = useState(10);
 
   const load = () => {
+    setLoading(true);
+
     listMatches({
       sport: sportFilter || undefined,
       location: locationFilter || undefined,
-    }).then(setMatches);
+    })
+      .then(setMatches)
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -25,109 +37,156 @@ const MatchesPage = () => {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+
     if (!sportType || !dateTime || !location) return;
-    await createMatch({
-      sport_type: sportType,
-      date_time: new Date(dateTime).toISOString(),
-      location,
-      max_players: maxPlayers,
-    });
-    setSportType("");
-    setDateTime("");
-    setLocation("");
-    setMaxPlayers(10);
-    load();
+
+    try {
+      await createMatch({
+        sport_type: sportType,
+        date_time: new Date(dateTime).toISOString(),
+        location,
+        max_players: maxPlayers,
+      });
+
+      showToast("Match created successfully", "success");
+
+      setSportType("");
+      setDateTime("");
+      setLocation("");
+      setMaxPlayers(10);
+
+      load();
+    } catch {
+      showToast("Failed to create match", "error");
+    }
   };
 
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      <div>
-        <h2 className="text-sm font-semibold mb-2 text-emerald-300">Search</h2>
-        <div className="space-y-2 mb-4">
-          <input
-            placeholder="Sport"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
-            value={sportFilter}
-            onChange={(e) => setSportFilter(e.target.value)}
-          />
-          <input
-            placeholder="Location"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-          />
-          <button
-            onClick={load}
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-xs"
-          >
-            Apply filters
-          </button>
+    <div className="grid lg:grid-cols-2 gap-10">
+
+      {/* LEFT: Search + Matches */}
+      <div className="space-y-8">
+
+        {/* Search Card */}
+        <div className="rounded-2xl p-6 bg-zinc-900/70 backdrop-blur border border-zinc-800">
+          <h2 className="text-lg font-semibold text-emerald-400 mb-4">
+            Search Matches
+          </h2>
+
+          <div className="space-y-3">
+            <input
+              placeholder="Sport"
+              value={sportFilter}
+              onChange={(e) => setSportFilter(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            />
+
+            <input
+              placeholder="Location"
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            />
+
+            <button
+              onClick={load}
+              className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition text-sm"
+            >
+              Apply Filters
+            </button>
+          </div>
         </div>
-        <h2 className="text-sm font-semibold mb-2 text-emerald-300">
-          Available matches
-        </h2>
-        <div className="space-y-2">
-          {matches.map((m) => (
-            <MatchCard key={m.id} match={m} />
-          ))}
-          {matches.length === 0 && (
-            <div className="text-xs text-zinc-500">No matches found.</div>
+
+        {/* Matches List */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-400">
+            Available Matches
+          </h2>
+
+          {matches.length === 0 ? (
+            <EmptyState
+              title="No matches found"
+              subtitle="Try changing filters or create a new match"
+            />
+          ) : (
+            matches.map((m) => (
+              <MatchCard key={m.id} match={m} />
+            ))
           )}
         </div>
       </div>
 
-      <div>
-        <h2 className="text-sm font-semibold mb-2 text-emerald-300">
-          Create match
+      {/* RIGHT: Create Match */}
+      <div className="rounded-2xl p-8 bg-zinc-900/70 backdrop-blur border border-zinc-800 shadow-xl shadow-emerald-900/10">
+        <h2 className="text-lg font-semibold text-emerald-400 mb-6">
+          Create Match
         </h2>
-        <form onSubmit={handleCreate} className="space-y-3">
+
+        <form onSubmit={handleCreate} className="space-y-5">
           <div>
-            <label className="text-xs block mb-1">Sport type</label>
+            <label className="text-xs block mb-1 text-zinc-400">
+              Sport type
+            </label>
             <input
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
               value={sportType}
               onChange={(e) => setSportType(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
               required
             />
           </div>
+
           <div>
-            <label className="text-xs block mb-1">Date & time</label>
+            <label className="text-xs block mb-1 text-zinc-400">
+              Date & Time
+            </label>
             <input
               type="datetime-local"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
               value={dateTime}
               onChange={(e) => setDateTime(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
               required
             />
           </div>
+
           <div>
-            <label className="text-xs block mb-1">Location</label>
+            <label className="text-xs block mb-1 text-zinc-400">
+              Location
+            </label>
             <input
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
               required
             />
           </div>
+
           <div>
-            <label className="text-xs block mb-1">Max players</label>
+            <label className="text-xs block mb-1 text-zinc-400">
+              Max players
+            </label>
             <input
               type="number"
               min={2}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
               value={maxPlayers}
               onChange={(e) => setMaxPlayers(Number(e.target.value))}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
               required
             />
           </div>
+
           <button
             type="submit"
-            className="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-sm"
+            className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition text-sm font-medium"
           >
-            Create
+            Create Match
           </button>
         </form>
       </div>
+
     </div>
   );
 };

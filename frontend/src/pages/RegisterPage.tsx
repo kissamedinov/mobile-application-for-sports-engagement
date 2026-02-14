@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { register, login } from "../api/auth";
 
-const RegisterPage = () => {
+export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -16,24 +16,26 @@ const RegisterPage = () => {
       await register(email, password);
       const res = await login(email, password);
       localStorage.setItem("token", res.access_token);
-      navigate("/"); // ✅ главный маршрут
+      navigate("/");
     } catch {
       setError("Registration failed");
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center">
-      <div className="w-full max-w-sm border border-zinc-800 rounded p-6">
-        <h1 className="text-xl font-semibold mb-4 text-emerald-400">Register</h1>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="card w-full max-w-sm">
+        <h1 className="page-title">Register</h1>
 
-        {error && <div className="text-xs text-red-400 mb-2">{error}</div>}
+        {error && (
+          <div className="text-xs text-red-400 mb-3">{error}</div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs block mb-1">Email</label>
+            <label className="label">Email</label>
             <input
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
+              className="input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -42,9 +44,9 @@ const RegisterPage = () => {
           </div>
 
           <div>
-            <label className="text-xs block mb-1">Password</label>
+            <label className="label">Password</label>
             <input
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm"
+              className="input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -52,15 +54,12 @@ const RegisterPage = () => {
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full mt-2 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-sm"
-          >
+          <button type="submit" className="button-primary w-full">
             Register
           </button>
         </form>
 
-        <div className="text-xs text-zinc-400 mt-3">
+        <div className="text-xs text-zinc-400 mt-4">
           Already have an account?{" "}
           <Link to="/login" className="text-emerald-400">
             Login
@@ -69,6 +68,4 @@ const RegisterPage = () => {
       </div>
     </div>
   );
-};
-
-export default RegisterPage;
+}
